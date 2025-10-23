@@ -10,13 +10,18 @@ URL = f"https://drive.google.com/uc?id={FILE_ID}"
 # --- Download and Load Model ---
 @st.cache_resource(show_spinner=False)
 def load_model():
+    # Import required classes for joblib pipeline
+    from sklearn.ensemble import RandomForestClassifier
+    from sklearn.preprocessing import StandardScaler, OneHotEncoder
+    from sklearn.impute import SimpleImputer
+    from sklearn.compose import ColumnTransformer
+    from sklearn.pipeline import Pipeline
+
     model_path = "heart_rf_model.joblib"
     r = requests.get(URL)
-
     if r.status_code != 200:
-        st.error("❌ Failed to download model. Check Google Drive sharing (set to 'Anyone with the link can view').")
+        st.error("❌ Failed to download model. Check Google Drive sharing (Anyone with link)")
         st.stop()
-
     with open(model_path, "wb") as f:
         f.write(r.content)
 
