@@ -1,31 +1,31 @@
 import streamlit as st
 import pandas as pd
-import pickle
+import numpy as np
 import requests
+import onnxruntime as rt
 
-# --- ENTER YOUR GOOGLE DRIVE FILE ID ---
-FILE_ID = "1iCqvACtQPOhWw9F_OYlzK_HqGrTxMb9w"  # Replace with your actual file ID
+# --- Google Drive ONNX file ---
+FILE_ID = "1g7MKWjoPey_70xmobQFqGVTcVae1UB3_"  # Replace with your ONNX file ID
 URL = f"https://drive.google.com/uc?export=download&id={FILE_ID}"
 
-# --- Download and Load Pickle model ---
-@st.cache_resource(show_spinner=False)
+@st.cache_resource
 def load_model():
-    model_path = "heart_rf_model.pkl"
-
-    # Download the model from Google Drive
+    model_path = "heart_rf_model.onnx"
+    
+    # Download ONNX file
     r = requests.get(URL)
     if r.status_code != 200:
-        st.error("❌ Failed to download model. Make sure file is shared (Anyone with link)")
+        st.error("❌ Failed to download model. Make sure file is shared as 'Anyone with link'.")
         st.stop()
-
+    
     with open(model_path, "wb") as f:
         f.write(r.content)
+    
+    # Load ONNX model
+    return rt.InferenceSession(model_path)
 
-    # Load Pickle model
-    with open(model_path, "rb") as f:
-        return pickle.load(f)
-
-rf_pipeline_loaded = load_model()
+rf_session = load_model()
+input_name = rf_session.get_inputs()[0].name
 
 # --- UI ---
 st.title("❤️ Heart Disease Prediction System")
@@ -70,16 +70,16 @@ input_dict = {
     "st_slope": [STslope_map[STslope]]
 }
 
-input_df = pd.DataFrame(input_dict)
+input_df = pd.DataFrame(input_dict, dtype=np.float32)
 
 # --- Prediction ---
 if st.button("🔍 Predict"):
-    pred = rf_pipeline_loaded.predict(input_df)[0]
+    pred = rf_session.run(None, {input_name: input_df.values})[0][0]
     if pred == 1:
         st.error("🚨 Heart Disease Detected! Please consult a doctor.")
     else:
         st.success("✅ Normal - No signs of heart disease detected.")
-
+    
     st.write("---")
     st.write("### Input Summary:")
     st.write(input_df)
