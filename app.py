@@ -1,85 +1,92 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
+import joblib
 import requests
-import onnxruntime as rt
+import io
 
-# --- Google Drive ONNX file ---
-FILE_ID = "1BKEDz0fNSgIMKMC_2NIWiuHhxD0flR7T"  # Replace with your ONNX file ID
-URL = f"https://drive.google.com/uc?export=download&id={FILE_ID}"
+# ----------------------------
+# 🔹 1. Load Model from Google Drive
+# ----------------------------
+# Replace this with YOUR Google Drive file ID
+# Example link: https://drive.google.com/file/d/1AbCdEfGh12345/view?usp=sharing
+# → File ID = 1AbCdEfGh12345
+FILE_ID = "1EB9x5IAeSjCx9UWfUqvYZOCHwV8jo-Ty"
+URL = f"https://drive.google.com/uc?id={FILE_ID}"
 
 @st.cache_resource
 def load_model():
-    model_path = "heart_rf_model.onnx"
-    
-    # Download ONNX file
-    r = requests.get(URL)
-    if r.status_code != 200:
-        st.error("❌ Failed to download model. Make sure file is shared as 'Anyone with link'.")
-        st.stop()
-    
-    with open(model_path, "wb") as f:
-        f.write(r.content)
-    
-    # Load ONNX model
-    return rt.InferenceSession(model_path)
+    response = requests.get(URL)
+    if response.status_code != 200:
+        st.error("⚠️ Unable to load model from Google Drive.")
+        return None
+    model = joblib.load(io.BytesIO(response.content))
+    return model
 
-rf_session = load_model()
-input_name = rf_session.get_inputs()[0].name
+rf_pipeline = load_model()
+if rf_pipeline is None:
+    st.stop()
 
-# --- UI ---
-st.title("❤️ Heart Disease Prediction System")
+# ----------------------------
+# 🔹 2. App Title
+# ----------------------------
+st.title("💓 Heart Disease Prediction App")
+st.write("Predict the likelihood of heart disease using clinical parameters.")
 
-age = st.slider("Age", 20, 100, 50)
-sex = st.selectbox("Sex", ["Female", "Male"])
-chestpain = st.selectbox(
-    "Chest Pain Type",
-    ["Typical Angina", "Atypical Angina", "Non-Anginal Pain", "Asymptomatic"]
+# ----------------------------
+# 🔹 3. Collect Inputs
+# ----------------------------
+st.sidebar.header("Enter Patient Details")
+
+age = st.sidebar.slider("Age", 20, 100, 50)
+sex = st.sidebar.selectbox("Sex", ["Female", "Male"])
+chest_pain_type = st.sidebar.selectbox(
+    "Chest Pain Type", ["Typical Angina (1)", "Atypical Angina (2)", "Non-Anginal Pain (3)", "Asymptomatic (4)"]
 )
-restingbps = st.slider("Resting BP (mmHg)", 80, 200, 120)
-cholesterol = st.slider("Cholesterol (mg/dL)", 100, 400, 200)
-fastingbs = st.selectbox("Fasting Blood Sugar", ["<=120 mg/dL", ">120 mg/dL"])
-restingecg = st.selectbox(
-    "Resting ECG",
-    ["Normal", "ST-T Abnormality", "LV Hypertrophy"]
-)
-maxheartrate = st.slider("Max Heart Rate", 60, 220, 150)
-exerciseangina = st.selectbox("Exercise Angina", ["No", "Yes"])
-oldpeak = st.slider("Oldpeak", 0.0, 6.5, 1.0, 0.1)
-STslope = st.selectbox("ST Slope", ["Upward", "Flat", "Downward"])
+resting_bp_s = st.sidebar.slider("Resting BP (mmHg)", 80, 200, 120)
+cholesterol = st.sidebar.slider("Cholesterol (mg/dL)", 100, 400, 200)
+fasting_blood_sugar = st.sidebar.selectbox("Fasting Blood Sugar", ["<=120 mg/dL (0)", ">120 mg/dL (1)"])
+resting_ecg = st.sidebar.selectbox("Resting ECG", ["Normal (0)", "ST-T Abnormality (1)", "LV Hypertrophy (2)"])
+max_heart_rate = st.sidebar.slider("Max Heart Rate", 60, 220, 150)
+exercise_angina = st.sidebar.selectbox("Exercise Angina", ["No (0)", "Yes (1)"])
+oldpeak = st.sidebar.slider("Oldpeak", 0.0, 6.5, 1.0, 0.1)
+st_slope = st.sidebar.selectbox("ST Slope", ["Upward (1)", "Flat (2)", "Downward (3)"])
 
-# --- Convert to numeric like training data ---
-sex = 1 if sex == "Male" else 0
-chestpain_map = {"Typical Angina": 1, "Atypical Angina": 2, "Non-Anginal Pain": 3, "Asymptomatic": 4}
-restingecg_map = {"Normal": 0, "ST-T Abnormality": 1, "LV Hypertrophy": 2}
-exerciseangina_map = {"No": 0, "Yes": 1}
-fastingbs_map = {"<=120 mg/dL": 0, ">120 mg/dL": 1}
-STslope_map = {"Upward": 1, "Flat": 2, "Downward": 3}
-
-input_dict = {
+# ----------------------------
+# 🔹 4. Prepare Input
+# ----------------------------
+input_data = {
     "age": [age],
-    "sex": [sex],
-    "chest_pain_type": [chestpain_map[chestpain]],
-    "resting_bp_s": [restingbps],
+    "sex": [1 if sex == "Male" else 0],
+    "chest_pain_type": [int(chest_pain_type.split("(")[-1][0])],
+    "resting_bp_s": [resting_bp_s],
     "cholesterol": [cholesterol],
-    "fasting_blood_sugar": [fastingbs_map[fastingbs]],
-    "resting_ecg": [restingecg_map[restingecg]],
-    "max_heart_rate": [maxheartrate],
-    "exercise_angina": [exerciseangina_map[exerciseangina]],
+    "fasting_blood_sugar": [int(fasting_blood_sugar.split("(")[-1][0])],
+    "resting_ecg": [int(resting_ecg.split("(")[-1][0])],
+    "max_heart_rate": [max_heart_rate],
+    "exercise_angina": [1 if exercise_angina == "Yes (1)" else 0],
     "oldpeak": [oldpeak],
-    "st_slope": [STslope_map[STslope]]
+    "st_slope": [int(st_slope.split("(")[-1][0])]
 }
 
-input_df = pd.DataFrame(input_dict, dtype=np.float32)
+input_df = pd.DataFrame(input_data)
 
-# --- Prediction ---
+# ----------------------------
+# 🔹 5. Prediction
+# ----------------------------
 if st.button("🔍 Predict"):
-    pred = rf_session.run(None, {input_name: input_df.values})[0][0]
+    pred = rf_pipeline.predict(input_df)[0]
+    prob = rf_pipeline.predict_proba(input_df)[0, 1]
+
     if pred == 1:
-        st.error("🚨 Heart Disease Detected! Please consult a doctor.")
+        st.error(f"⚠️ High Risk of Heart Disease — Probability: {prob:.2f}")
     else:
-        st.success("✅ Normal - No signs of heart disease detected.")
-    
-    st.write("---")
+        st.success(f"✅ No Heart Disease — Probability: {prob:.2f}")
+
     st.write("### Input Summary:")
-    st.write(input_df)
+    st.dataframe(input_df)
+
+# ----------------------------
+# 🔹 6. Footer
+# ----------------------------
+st.write("---")
+st.caption("Developed with ❤️ using Streamlit and Random Forest Classifier")
