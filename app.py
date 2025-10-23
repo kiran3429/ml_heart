@@ -1,31 +1,34 @@
 import streamlit as st
 import pandas as pd
-import joblib
+import pickle
 import requests
 
-# --- ENTER YOUR GOOGLE DRIVE FILE ID BELOW ---
-FILE_ID = "1EB9x5IAeSjCx9UWfUqvYZOCHwV8jo-Ty"  # <-- Replace this with your actual file ID
+# --- ENTER YOUR GOOGLE DRIVE FILE ID ---
+FILE_ID = "1iCqvACtQPOhWw9F_OYlzK_HqGrTxMb9w"
 URL = f"https://drive.google.com/uc?id={FILE_ID}"
 
-# --- Download and Load Model ---
+# --- Download and Load Pickle model ---
 @st.cache_resource(show_spinner=False)
 def load_model():
-    # Import required classes for joblib pipeline
+    # Import required sklearn classes
     from sklearn.ensemble import RandomForestClassifier
     from sklearn.preprocessing import StandardScaler, OneHotEncoder
     from sklearn.impute import SimpleImputer
     from sklearn.compose import ColumnTransformer
     from sklearn.pipeline import Pipeline
 
-    model_path = "heart_rf_model.joblib"
+    model_path = "heart_rf_model.pkl"
     r = requests.get(URL)
     if r.status_code != 200:
-        st.error("❌ Failed to download model. Check Google Drive sharing (Anyone with link)")
+        st.error("❌ Failed to download model. Make sure file is shared (Anyone with link)")
         st.stop()
+
     with open(model_path, "wb") as f:
         f.write(r.content)
 
-    return joblib.load(model_path)
+    # Load Pickle model
+    with open(model_path, "rb") as f:
+        return pickle.load(f)
 
 rf_pipeline_loaded = load_model()
 
