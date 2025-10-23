@@ -5,7 +5,7 @@ import requests
 import onnxruntime as rt
 
 # --- Google Drive ONNX file ---
-FILE_ID = "1g7MKWjoPey_70xmobQFqGVTcVae1UB3_"  # Replace with your ONNX file ID
+FILE_ID = "1BKEDz0fNSgIMKMC_2NIWiuHhxD0flR7T"  # Replace with your ONNX file ID
 URL = f"https://drive.google.com/uc?export=download&id={FILE_ID}"
 
 @st.cache_resource
