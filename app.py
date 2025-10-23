@@ -4,20 +4,15 @@ import pickle
 import requests
 
 # --- ENTER YOUR GOOGLE DRIVE FILE ID ---
-FILE_ID = "1iCqvACtQPOhWw9F_OYlzK_HqGrTxMb9w"
-URL = f"https://drive.google.com/uc?id={FILE_ID}"
+FILE_ID = "1iCqvACtQPOhWw9F_OYlzK_HqGrTxMb9w"  # Replace with your actual file ID
+URL = f"https://drive.google.com/uc?export=download&id={FILE_ID}"
 
 # --- Download and Load Pickle model ---
 @st.cache_resource(show_spinner=False)
 def load_model():
-    # Import required sklearn classes
-    from sklearn.ensemble import RandomForestClassifier
-    from sklearn.preprocessing import StandardScaler, OneHotEncoder
-    from sklearn.impute import SimpleImputer
-    from sklearn.compose import ColumnTransformer
-    from sklearn.pipeline import Pipeline
-
     model_path = "heart_rf_model.pkl"
+
+    # Download the model from Google Drive
     r = requests.get(URL)
     if r.status_code != 200:
         st.error("❌ Failed to download model. Make sure file is shared (Anyone with link)")
