@@ -4,16 +4,22 @@ import joblib
 import requests
 
 # --- ENTER YOUR GOOGLE DRIVE FILE ID BELOW ---
-FILE_ID = "1EB9x5IAeSjCx9UWfUqvYZOCHwV8jo-Ty"  # <-- Replace this with your actual ID
+FILE_ID = "1EB9x5IAeSjCx9UWfUqvYZOCHwV8jo-Ty"  # <-- Replace this with your actual file ID
 URL = f"https://drive.google.com/uc?id={FILE_ID}"
 
-# --- Download model ---
-@st.cache_resource
+# --- Download and Load Model ---
+@st.cache_resource(show_spinner=False)
 def load_model():
     model_path = "heart_rf_model.joblib"
     r = requests.get(URL)
+
+    if r.status_code != 200:
+        st.error("❌ Failed to download model. Check Google Drive sharing (set to 'Anyone with the link can view').")
+        st.stop()
+
     with open(model_path, "wb") as f:
         f.write(r.content)
+
     return joblib.load(model_path)
 
 rf_pipeline_loaded = load_model()
