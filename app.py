@@ -4,12 +4,6 @@ import joblib
 import requests
 import io
 
-# ----------------------------
-# 🔹 1. Load Model from Google Drive
-# ----------------------------
-# Replace this with YOUR Google Drive file ID
-# Example link: https://drive.google.com/file/d/1AbCdEfGh12345/view?usp=sharing
-# → File ID = 1AbCdEfGh12345
 FILE_ID = "1EB9x5IAeSjCx9UWfUqvYZOCHwV8jo-Ty"
 URL = f"https://drive.google.com/uc?id={FILE_ID}"
 
@@ -26,22 +20,14 @@ rf_pipeline = load_model()
 if rf_pipeline is None:
     st.stop()
 
-# ----------------------------
-# 🔹 2. App Title
-# ----------------------------
 st.title("💓 Heart Disease Prediction App")
 st.write("Predict the likelihood of heart disease using clinical parameters.")
 
-# ----------------------------
-# 🔹 3. Collect Inputs
-# ----------------------------
 st.sidebar.header("Enter Patient Details")
 
 age = st.sidebar.slider("Age", 20, 100, 50)
 sex = st.sidebar.selectbox("Sex", ["Female", "Male"])
-chest_pain_type = st.sidebar.selectbox(
-    "Chest Pain Type", ["Typical Angina (1)", "Atypical Angina (2)", "Non-Anginal Pain (3)", "Asymptomatic (4)"]
-)
+chest_pain_type = st.sidebar.selectbox("Chest Pain Type", ["Typical Angina (1)", "Atypical Angina (2)", "Non-Anginal Pain (3)", "Asymptomatic (4)"])
 resting_bp_s = st.sidebar.slider("Resting BP (mmHg)", 80, 200, 120)
 cholesterol = st.sidebar.slider("Cholesterol (mg/dL)", 100, 400, 200)
 fasting_blood_sugar = st.sidebar.selectbox("Fasting Blood Sugar", ["<=120 mg/dL (0)", ">120 mg/dL (1)"])
@@ -51,9 +37,6 @@ exercise_angina = st.sidebar.selectbox("Exercise Angina", ["No (0)", "Yes (1)"])
 oldpeak = st.sidebar.slider("Oldpeak", 0.0, 6.5, 1.0, 0.1)
 st_slope = st.sidebar.selectbox("ST Slope", ["Upward (1)", "Flat (2)", "Downward (3)"])
 
-# ----------------------------
-# 🔹 4. Prepare Input
-# ----------------------------
 input_data = {
     "age": [age],
     "sex": [1 if sex == "Male" else 0],
@@ -70,9 +53,6 @@ input_data = {
 
 input_df = pd.DataFrame(input_data)
 
-# ----------------------------
-# 🔹 5. Prediction
-# ----------------------------
 if st.button("🔍 Predict"):
     pred = rf_pipeline.predict(input_df)[0]
     prob = rf_pipeline.predict_proba(input_df)[0, 1]
@@ -85,8 +65,5 @@ if st.button("🔍 Predict"):
     st.write("### Input Summary:")
     st.dataframe(input_df)
 
-# ----------------------------
-# 🔹 6. Footer
-# ----------------------------
 st.write("---")
 st.caption("Developed with ❤️ using Streamlit and Random Forest Classifier")
