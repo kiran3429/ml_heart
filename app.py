@@ -66,4 +66,4 @@ if st.button("🔍 Predict"):
     st.dataframe(input_df)
 
 st.write("---")
-st.caption("Developed with ❤️ using Streamlit and Random Forest Classifier")
+st.caption("Developed By Kiran Kumar Annad Hari using Streamlit and Random Forest Classifier")
